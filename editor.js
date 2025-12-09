@@ -1,5 +1,4 @@
 let selectedNode = null;
-let imageTransformer = null;
 let floatingControls = document.getElementById('floating-media-controls');
 
 // =========================================================
@@ -51,12 +50,9 @@ document.addEventListener("keydown", function(e) {
             }
         }
 
-        // Clear both transformers (Konva.Transformer instances)
+        // Clear transformer (Konva.Transformer instances)
         if (typeof transformer !== 'undefined' && transformer) {
             try { transformer.nodes([]); } catch (e) {}
-        }
-        if (typeof imageTransformer !== 'undefined' && imageTransformer) {
-            try { imageTransformer.nodes([]); } catch (e) {}
         }
 
         // Destroy the Konva node
@@ -107,6 +103,17 @@ function loadTemplateFromURL(url) {
             height: newHeight,
             x: (maxWidth - newWidth) / 2,
             y: (maxHeight - newHeight) / 2,
+            name: 'template',
+            mediaType: 'image',
+            draggable: true,
+            listening: true
+        });
+
+        image.on('click', () => {
+            selectShape(image);
+        });
+        image.on('tap', () => {
+            selectShape(image);
         });
 
         const layer = getActiveLayer();
@@ -119,19 +126,7 @@ function loadTemplateFromURL(url) {
         layer.add(image);
         image.draggable(true);
 
-        if (imageTransformer) {
-            imageTransformer.nodes([image]);
-        } else {
-            imageTransformer = new Konva.Transformer({
-                nodes: [image],
-                rotateEnabled: true,
-                enabledAnchors: [
-                    "top-left", "top-right",
-                    "bottom-left", "bottom-right"
-                ]
-            });
-            layer.add(imageTransformer);
-        }
+        transformer.nodes([image]);
 
         image.on("click", () => {
             selectShape(image);
@@ -329,20 +324,8 @@ function selectShape(shape) {
     selectedNode = shape;
     selectedShape = shape;
 
-    // Determine if the selected shape is a Konva.Image (Templates/Uploaded Images/Video) or an element
-    // explicitly marked as media (Audio).
-    const isImageOrMedia = shape.getClassName() === 'Image' || shape.getAttr('isMedia');
-
-    // 1. Clear *both* transformers first to ensure a clean state.
-    if (transformer) transformer.nodes([]);
-    if (imageTransformer) imageTransformer.nodes([]);
-
-    // 2. Apply the correct transformer based on the element type.
-    if (isImageOrMedia && imageTransformer) {
-        // Use the specialized imageTransformer for Images/Templates/Media
-        imageTransformer.nodes([selectedNode]);
-    } else if (transformer) {
-        // Use the general transformer for Text, Rectangles, etc.
+    // Apply the transformer to the selected node
+    if (transformer) {
         transformer.nodes([selectedNode]);
     }
 
@@ -429,6 +412,7 @@ function addTextToCanvas(initialText, size, color, x = 50, y = 150, align = 'lef
         fill: color,
         align: align,
         draggable: true,
+        listening: true,
         name: 'editable-shape',
         wrap: 'word',
         width: stage.width() - 100
@@ -437,6 +421,7 @@ function addTextToCanvas(initialText, size, color, x = 50, y = 150, align = 'lef
     setupTextListeners(newText);
     layer.add(newText);
     layer.batchDraw();
+    selectShape(newText);
     return newText;
 }
 
